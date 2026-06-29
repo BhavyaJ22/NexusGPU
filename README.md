@@ -243,3 +243,10 @@ This allows the complete marketplace workflow to be explored without manual data
 - Real-time notifications using WebSockets
 
 ---
+
+## Contributors
+- Bhavya
+- Manas Singh
+- Parth Malik
+
+---
