@@ -8,7 +8,7 @@ The platform automatically matches consumers with the nearest available GPU usin
 
 ## Features
 
-- Automatic GPU allocation using geographic proximity (Haversine Formula)
+- Automatic GPU allocation using geographic proximity (Haversine Formula) 
 - Credit-based payment and transaction ledger management
 - Host dashboard to register and manage GPU resources
 - Role-based access (Consumer / Host / Both)
