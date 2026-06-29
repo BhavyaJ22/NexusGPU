@@ -1,127 +1,245 @@
 # NexusGPU — Decentralized GPU Allocation System
 
-A full-stack university project simulating a decentralized GPU marketplace with
-real database transactions, Haversine-based auto-routing, and credit ledger management.
+A full-stack web application that simulates a decentralized GPU marketplace where users can register GPU resources, allocate compute on demand, and manage credit-based transactions.
+
+The platform automatically matches consumers with the nearest available GPU using the **Haversine distance algorithm** while ensuring **ACID-compliant database transactions** for every allocation.
+
+---
+
+## Features
+
+- Automatic GPU allocation using geographic proximity (Haversine Formula)
+- Credit-based payment and transaction ledger management
+- Host dashboard to register and manage GPU resources
+- Role-based access (Consumer / Host / Both)
+- Dashboard with platform statistics and activity
+- Automatic resource release and availability updates
+- Transaction history for every user
+- RESTful API built with FastAPI
 
 ---
 
 ## Tech Stack
-- **Backend**: Python · FastAPI · SQLAlchemy · SQLite (swap to MySQL/PostgreSQL via env)
-- **Frontend**: React 18 · Vite · Custom CSS (no UI library)
+
+### Frontend
+- React 18
+- Vite
+- JavaScript (JSX)
+- Custom CSS
+
+### Backend
+- Python
+- FastAPI
+- SQLAlchemy ORM
+- SQLite
+- Easily configurable for MySQL/PostgreSQL
 
 ---
 
 ## Project Structure
 
-```
-project/
+```text
+NexusGPU/
 ├── backend/
-│   ├── main.py           ← FastAPI app + all endpoints
+│   ├── main.py
 │   └── requirements.txt
-└── frontend/
-    ├── index.html
-    ├── package.json
-    ├── vite.config.js
-    └── src/
-        ├── main.jsx
-        ├── App.jsx           ← Shell, user selector, nav, toasts
-        ├── index.css         ← All styles (dark terminal aesthetic)
-        └── components/
-            ├── Dashboard.jsx    ← Tab 1: KPIs, region load, recent activity
-            ├── Marketplace.jsx  ← Tab 2: Resource grid, auto-buy, manual alloc
-            ├── HostPanel.jsx    ← Tab 3: Register machines, view earnings
-            └── Account.jsx     ← Tab 4: Profile, add credits, ledger
+│
+├── frontend/
+│   ├── index.html
+│   ├── package.json
+│   ├── vite.config.js
+│   └── src/
+│       ├── App.jsx
+│       ├── main.jsx
+│       ├── index.css
+│       └── components/
+│           ├── Dashboard.jsx
+│           ├── Marketplace.jsx
+│           ├── HostPanel.jsx
+│           └── Account.jsx
+│
+├── README.md
+└── .gitignore
 ```
 
 ---
 
-## Setup & Run
+## Getting Started
 
-### 1. Backend
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/BhavyaJ22/NexusGPU.git
+cd NexusGPU
+```
+
+---
+
+### 2. Backend Setup
 
 ```bash
 cd backend
+
 pip install -r requirements.txt
 
-# Default: SQLite (auto-created as gpu_system.db)
 uvicorn main:app --reload --port 8000
-
-# MySQL: set env before running
-DATABASE_URL=mysql+pymysql://user:pass@localhost/gpudb uvicorn main:app --reload
 ```
 
-API docs auto-generated at: http://localhost:8000/docs
+By default, the application uses **SQLite** and automatically creates:
 
-### 2. Frontend
+```
+gpu_system.db
+```
+
+To use MySQL instead:
+
+```bash
+DATABASE_URL=mysql+pymysql://user:password@localhost/gpudb
+uvicorn main:app --reload
+```
+
+Backend:
+
+```
+http://localhost:8000
+```
+
+Interactive API Documentation:
+
+```
+http://localhost:8000/docs
+```
+
+---
+
+### 3. Frontend Setup
 
 ```bash
 cd frontend
+
 npm install
+
 npm run dev
-# Opens at http://localhost:5173
+```
+
+Frontend:
+
+```
+http://localhost:5173
 ```
 
 ---
 
 ## Database Schema
 
-| Table | Purpose |
-|-------|---------|
-| `USERS` | All users with role (`Consumer`/`Host`/`Both`), region, geo-coords, credit balance |
-| `RESOURCE` | GPU/Supercomputer listings with type, tier (A/B/C), region, hourly rate |
-| `REQUEST` | Consumer allocation requests (Automatic/Manual, type, duration) |
-| `ALLOCATION` | Active/completed allocations linking Request ↔ Resource |
-| `CREDIT_TRANSACTION` | Full debit/credit ledger per user |
+| Table | Description |
+|--------|-------------|
+| `USERS` | User profiles, roles, credits, and location |
+| `RESOURCE` | GPU resources registered by hosts |
+| `REQUEST` | Allocation requests created by consumers |
+| `ALLOCATION` | Active and completed allocations |
+| `CREDIT_TRANSACTION` | Credit and payment ledger |
 
 ---
 
-## Key Features
+## System Workflow
 
-### Auto-Buy (Haversine Routing)
-When mode = `Automatic`, the backend fetches all available matching resources,
-computes the great-circle distance between the consumer's lat/lon and each host's
-lat/lon using the Haversine formula, and selects the nearest match.
+### Automatic Allocation
 
-### Atomic Transactions
-The `/allocate` endpoint uses a single SQLAlchemy session for:
-1. INSERT into REQUEST
-2. INSERT into ALLOCATION
-3. UPDATE RESOURCE → `Busy`
-4. DEDUCT consumer credits
-5. LOG debit transaction
-6. CREDIT host (90% of total — 10% platform fee)
-7. LOG credit transaction
+When a consumer selects **Automatic Mode**:
 
-All 7 steps succeed or the entire transaction rolls back.
+1. Fetch matching available GPU resources.
+2. Compute the distance between the consumer and each host using the Haversine Formula.
+3. Select the nearest available resource.
+4. Reserve the resource.
+5. Deduct consumer credits.
+6. Credit the host.
+7. Record all financial transactions.
+8. Return allocation details.
 
-### Role-Gated UI
-- **Consumer**: Marketplace + Account
-- **Host**: Host Panel + Account (no marketplace buy buttons)
-- **Both**: All 4 tabs with full access
+All operations are executed within a single database transaction.
+
+---
+
+## Atomic Transactions
+
+The `/allocate` endpoint performs the following operations atomically:
+
+- Create allocation request
+- Create allocation record
+- Mark resource as busy
+- Debit consumer credits
+- Record debit transaction
+- Credit the host (90% after platform fee)
+- Record host transaction
+
+If any operation fails, the entire transaction is rolled back.
+
+---
+
+## User Roles
+
+### Consumer
+
+- Browse available GPU resources
+- Automatic allocation
+- Manual allocation
+- Manage wallet balance
+- View allocation history
+
+### Host
+
+- Register GPU resources
+- Toggle resource availability
+- Track earnings
+- View hosted allocations
+
+### Both
+
+Access to all consumer and host features.
 
 ---
 
 ## API Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
+| Method | Endpoint | Description |
+|----------|----------|-------------|
 | GET | `/users` | List all users |
 | GET | `/users/{id}` | Get user profile |
-| POST | `/users/{id}/add-credits` | Top up credits |
-| GET | `/dashboard/stats` | KPIs + region demand + recent activity |
-| GET | `/resources` | Available resources (filterable) |
-| POST | `/allocate` | Allocate a resource (auto or manual) |
-| POST | `/release` | Release an active allocation |
-| POST | `/resources` | Register new host resource |
-| GET | `/host/{id}/allocations` | Host's allocation history |
-| GET | `/host/{id}/resources` | Host's registered machines |
-| PUT | `/resources/{id}/status` | Toggle Available/Offline |
-| GET | `/users/{id}/transactions` | Full credit ledger |
-| GET | `/users/{id}/active-allocations` | Consumer's running allocations |
+| POST | `/users/{id}/add-credits` | Add credits |
+| GET | `/dashboard/stats` | Platform statistics |
+| GET | `/resources` | List available GPU resources |
+| POST | `/resources` | Register a new GPU resource |
+| POST | `/allocate` | Allocate a resource |
+| POST | `/release` | Release an allocation |
+| GET | `/host/{id}/resources` | Host resources |
+| GET | `/host/{id}/allocations` | Host allocation history |
+| PUT | `/resources/{id}/status` | Update resource availability |
+| GET | `/users/{id}/transactions` | Transaction history |
+| GET | `/users/{id}/active-allocations` | Active allocations |
 
 ---
 
 ## Seed Data
 
-8 users auto-created on first run across 5 global regions, each with pre-seeded
-resources and credit balances so you can immediately explore the full flow.
+On first launch, the application automatically initializes sample data, including:
+
+- 8 pre-created users
+- 5 global regions
+- Multiple GPU resources
+- Preloaded credit balances
+
+This allows the complete marketplace workflow to be explored without manual data entry.
+
+---
+
+## Future Improvements
+
+- JWT-based authentication
+- Docker support
+- Kubernetes deployment
+- Payment gateway integration
+- GPU benchmarking and analytics
+- Real-time notifications using WebSockets
+
+---
